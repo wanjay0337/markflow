@@ -29,7 +29,7 @@ Two versions included: a warm editorial aesthetic (V1) and a dark technical aest
 No build step required. Just open the HTML file in any modern browser.
 
 ```bash
-git clone https://github.com/your-username/markflow.git
+git clone https://github.com/wanjay0337/markflow.git
 cd markflow
 open markflow-v1.html   # warm editorial theme
 # or
