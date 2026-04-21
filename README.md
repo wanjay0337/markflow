@@ -86,6 +86,45 @@ All loaded from CDN at runtime. Works offline once fonts are cached.
 
 ---
 
+## 部署 / Deployment
+
+**中文**
+
+本工具為單一 HTML 檔，可部署至任何靜態伺服器：
+
+**Apache2**
+```bash
+# 將 index.html 複製到網站根目錄
+cp mermaid-tool.html /var/www/html/index.html
+```
+
+**Nginx**
+```bash
+cp mermaid-tool.html /usr/share/nginx/html/index.html
+```
+
+**Netlify / Vercel**
+直接拖曳 `index.html` 到部署介面即可。
+
+**English**
+
+This is a single HTML file. Deploy to any static host:
+
+**Apache2**
+```bash
+cp mermaid-tool.html /var/www/html/index.html
+```
+
+**Nginx**
+```bash
+cp mermaid-tool.html /usr/share/nginx/html/index.html
+```
+
+**Netlify / Vercel**
+Drag and drop `index.html` onto the deploy interface.
+
+---
+
 ## Browser Support
 
 Chrome / Edge 90+, Firefox 90+, Safari 15+. Requires `navigator.clipboard` for the Copy HTML button (HTTPS or localhost).
