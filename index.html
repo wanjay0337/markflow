@@ -369,13 +369,12 @@ $$
 
 ## 程式碼 | Code Snippets
 
-```javascript
+`\`\`javascript
 function exportPDF(isDark) {
   const css = isDark ? PDF_DARK : PDF_LIGHT;
   const iframe = document.createElement('iframe');
   iframe.contentDocument.fonts.ready.then(() => iframe.print());
-}
-```
+}`\`\`\
 ##表格
 
 | 格式 | 可編輯 | 深色支援 | 數學公式 |
