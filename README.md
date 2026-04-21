@@ -2,7 +2,7 @@
 
 A clean, minimal Markdown editor that runs entirely in your browser — no install, no backend, no dependencies to manage. Write Markdown, preview it live, and export to PDF, Word, or HTML with one click.
 
-Two versions included: a warm editorial aesthetic (V1) and a dark technical aesthetic (V2).
+Two versions included: a warm editorial aesthetic (Type A) and a dark technical aesthetic (Type B).
 
 ![MarkFlow Screenshot](screenshot.png)
 
@@ -31,9 +31,9 @@ No build step required. Just open the HTML file in any modern browser.
 ```bash
 git clone https://github.com/wanjay0337/markflow.git
 cd markflow
-open markflow-v1.html   # warm editorial theme
+open markflow-v0.00A.html   # warm editorial theme
 # or
-open markflow-v2.html   # dark technical theme
+open markflow-v0.00B.html   # dark technical theme
 ```
 
 Or drop either file directly onto a browser window.
@@ -44,8 +44,8 @@ Or drop either file directly onto a browser window.
 
 | File | Description |
 |------|-------------|
-| `markflow-v1.html` | Warm editorial theme — Fraunces serif headings, Geist UI, amber accent |
-| `markflow-v2.html` | Dark technical theme — IBM Plex Mono editor, IBM Plex Serif headings, blue accent |
+| `markflow-v0.00A.html` | Warm editorial theme — Fraunces serif headings, Geist UI, amber accent |
+| `markflow-v0.00B.html` | Dark technical theme — IBM Plex Mono editor, IBM Plex Serif headings, blue accent |
 | `README.md` | This file |
 
 Each file is fully self-contained. No external files, no build tools.
