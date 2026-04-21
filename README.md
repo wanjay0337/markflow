@@ -95,12 +95,12 @@ All loaded from CDN at runtime. Works offline once fonts are cached.
 **Apache2**
 ```bash
 # 將 index.html 複製到網站根目錄
-cp mermaid-tool.html /var/www/html/index.html
+cp markflow-v0.00A.html /var/www/html/index.html
 ```
 
 **Nginx**
 ```bash
-cp mermaid-tool.html /usr/share/nginx/html/index.html
+cp markflow-v0.00A.html /usr/share/nginx/html/index.html
 ```
 
 **Netlify / Vercel**
@@ -112,12 +112,12 @@ This is a single HTML file. Deploy to any static host:
 
 **Apache2**
 ```bash
-cp mermaid-tool.html /var/www/html/index.html
+cp markflow-v0.00A.html /var/www/html/index.html
 ```
 
 **Nginx**
 ```bash
-cp mermaid-tool.html /usr/share/nginx/html/index.html
+cp markflow-v0.00A.html /usr/share/nginx/html/index.html
 ```
 
 **Netlify / Vercel**
