@@ -322,49 +322,61 @@ th{font-size:.72em;font-weight:600;letter-spacing:.8px;text-transform:uppercase;
 td{padding:7px 12px;border-bottom:1px solid rgba(232,226,218,.06);vertical-align:top}
 hr{border:none;border-top:1px solid rgba(232,226,218,.13);margin:2.5em 0}img{max-width:100%;border-radius:6px}`;
 
-const DEMO=`# 歡迎使用 MarkFlow
+const DEMO=`# 歡迎使用 MarkFlow | Welcome to MarkFlow
 
 **MarkFlow** 是一個簡潔的 Markdown 編輯器，支援即時預覽，並可匯出為 PDF、Word 文件或 HTML 網頁。支援 **LaTeX** 數學公式渲染。
 
-## 文字格式
+**MarkFlow** is a streamlined Markdown editor featuring real-time preview and export options for PDF, Word (DOCX), and HTML. It includes full support for **LaTeX** mathematical formulas.
 
-這是普通段落。你可以使用 **粗體**、*斜體*、~~刪除線~~ 和 \`行內程式碼\`。
+---
 
-## 數學公式
+## 文字格式 | Text Formatting
 
-行內公式：愛因斯坦的質能等式 $E = mc^2$，以及歐拉恆等式 $e^{i\\pi} + 1 = 0$。
+這是普通段落。你可以使用 **粗體**、*斜體*、~~刪除線~~ 和 `行內程式碼`。
 
-區塊公式：
+This is a standard paragraph. You can use **Bold**, *Italic*, ~~Strikethrough~~, and `Inline Code`.
+
+---
+
+## 數學公式 | Mathematical Formulas
+
+行內公式 (Inline)：愛因斯坦的質能等式 $E = mc^2$，以及歐拉恆等式 $e^{i\pi} + 1 = 0$。
+
+區塊公式 (Block)：
 
 $$
-\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}
+\int_0^\infty e^{-x^2} dx = \frac{\sqrt{\pi}}{2}
 $$
 
 $$
-\\sum_{n=0}^{\\infty} \\frac{x^n}{n!} = e^x
+\sum_{n=0}^{\infty} \frac{x^n}{n!} = e^x
 $$
 
-## 引用與清單
+---
+
+## 引用與清單 | Quotes & Lists
 
 > 「好的設計是讓多餘的東西消失，讓必要的東西清晰可見。」
+> "Good design is making something intelligible and memorable; great design is making something memorable and meaningful."
 
-- 即時 Markdown 預覽
-- LaTeX 數學公式（KaTeX）
-- 深色 / 淺色 PDF 匯出
-- Word DOCX 匯出
-- 完整 HTML 網頁下載
+* **即時預覽** | Real-time Markdown preview
+* **數學公式** | LaTeX support (via KaTeX)
+* **PDF 匯出** | Dark / Light mode PDF export
+* **Word 匯出** | Word (DOCX) export support
+* **網頁下載** | Full HTML webpage download
 
-## 程式碼
+---
 
-\`\`\`javascript
+## 程式碼 | Code Snippets
+
+```javascript
 function exportPDF(isDark) {
   const css = isDark ? PDF_DARK : PDF_LIGHT;
   const iframe = document.createElement('iframe');
   iframe.contentDocument.fonts.ready.then(() => iframe.print());
 }
-\`\`\`
-
-## 表格
+```
+##表格
 
 | 格式 | 可編輯 | 深色支援 | 數學公式 |
 |------|:------:|:--------:|:--------:|
