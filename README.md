@@ -96,4 +96,4 @@ Chrome / Edge 90+, Firefox 90+, Safari 15+. Requires `navigator.clipboard` for t
 
 MIT License
 
-Copyright (c) 2025 by wanjay0337
+Copyright (c) 2026 by wanjay0337
