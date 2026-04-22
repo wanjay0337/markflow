@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>MarkFlow</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+<script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f9f7f4;--surf:#fff;--surf2:#f2f0ec;--surf3:#e8e5e0;
+  --ink:#1c1917;--ink2:#78716c;--ink3:#a8a29e;
+  --line:rgba(28,25,23,.07);--line2:rgba(28,25,23,.14);
+  --acc:#c2692a;--acc-bg:#fdf3ec;
+  --fu:'Geist',sans-serif;--fs:'Fraunces',Georgia,serif;--fm:'DM Mono',monospace;
+  --r:6px;
+}
+.dk{
+  --bg:#141210;--surf:#1c1a18;--surf2:#242220;--surf3:#2e2b28;
+  --ink:#e8e2da;--ink2:#8a8480;--ink3:#58544f;
+  --line:rgba(232,226,218,.06);--line2:rgba(232,226,218,.13);--acc-bg:#1e1410;
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--fu);background:var(--bg);color:var(--ink);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased;transition:background .2s,color .2s}
+nav{height:48px;background:var(--surf);border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 16px;gap:10px;flex-shrink:0;z-index:20}
+.logo{font-family:var(--fs);font-size:17px;font-weight:300;font-style:italic;color:var(--ink);letter-spacing:-.3px;user-select:none;flex-shrink:0}
+.logo b{font-style:normal;font-weight:500}
+.view-tabs{display:flex;background:var(--surf2);border:1px solid var(--line2);border-radius:var(--r);padding:2px;gap:1px}
+.vt{height:26px;padding:0 11px;border:none;background:transparent;font-family:var(--fu);font-size:12px;font-weight:500;color:var(--ink3);cursor:pointer;border-radius:4px;transition:all .15s;white-space:nowrap}
+.vt.on{background:var(--surf);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.1)}
+.spacer{flex:1}
+.btn{height:32px;display:inline-flex;align-items:center;gap:5px;padding:0 12px;border-radius:var(--r);font-family:var(--fu);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap;border:1px solid var(--line2);background:transparent;color:var(--ink2)}
+.btn:hover{background:var(--surf2);color:var(--ink)}
+.btn-sq{width:32px;padding:0;justify-content:center}
+.btn-exp{background:var(--surf2)}
+.btn-exp.active,.btn-exp:hover{background:var(--surf3);color:var(--ink)}
+.fstrip{height:38px;background:var(--surf);border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 12px;gap:1px;flex-shrink:0;overflow-x:auto;scrollbar-width:none}
+.fstrip::-webkit-scrollbar{display:none}
+.fsep{width:1px;height:14px;background:var(--line2);margin:0 4px;flex-shrink:0}
+.fb{height:26px;min-width:28px;padding:0 6px;border:none;border-radius:4px;background:transparent;color:var(--ink2);font-family:var(--fm);font-size:11.5px;cursor:pointer;transition:all .12s;display:flex;align-items:center;justify-content:center;white-space:nowrap;flex-shrink:0}
+.fb:hover{background:var(--surf2);color:var(--ink)}
+.workspace{flex:1;display:flex;overflow:hidden;min-height:0}
+.ed-pane{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+#editor{flex:1;width:100%;padding:40px 8% 60px;background:var(--surf);color:var(--ink);border:none;outline:none;resize:none;font-family:var(--fm);font-size:13.5px;line-height:1.9;tab-size:2;overflow-y:auto;caret-color:var(--acc);transition:background .2s,color .2s}
+#editor::placeholder{color:var(--ink3)}
+#editor::-webkit-scrollbar{width:4px}
+#editor::-webkit-scrollbar-thumb{background:var(--surf3);border-radius:4px}
+.div-handle{width:1px;background:var(--line);cursor:col-resize;flex-shrink:0;transition:background .15s;position:relative}
+.div-handle::after{content:'';position:absolute;inset:0 -3px}
+.div-handle:hover,.div-handle.drag{background:var(--line2)}
+.pv-pane{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.pv-scroll{flex:1;overflow-y:auto;background:var(--bg)}
+.pv-scroll::-webkit-scrollbar{width:4px}
+.pv-scroll::-webkit-scrollbar-thumb{background:var(--surf3);border-radius:4px}
+#preview{max-width:680px;margin:0 auto;padding:40px 32px 80px;font-family:var(--fu);font-size:15px;line-height:1.8;color:var(--ink)}
+#preview h1{font-family:var(--fs);font-size:2em;font-weight:300;font-style:italic;color:var(--ink);margin:0 0 .5em;letter-spacing:-.5px;line-height:1.2}
+#preview h2{font-family:var(--fs);font-size:1.45em;font-weight:300;color:var(--ink);margin:2em 0 .4em;padding-bottom:.3em;border-bottom:1px solid var(--line2)}
+#preview h3{font-family:var(--fu);font-size:.75em;font-weight:600;color:var(--ink2);margin:1.8em 0 .5em;letter-spacing:1.2px;text-transform:uppercase}
+#preview h4,#preview h5,#preview h6{font-size:1em;font-weight:500;color:var(--ink);margin:1.5em 0 .3em}
+#preview p{margin:0 0 1em}
+#preview a{color:var(--acc);text-decoration:underline;text-underline-offset:3px}
+#preview strong{font-weight:600}
+#preview em{font-style:italic;font-family:var(--fs);font-size:1.04em}
+#preview ul,#preview ol{margin:0 0 1em 1.4em}
+#preview li{margin:.3em 0}
+#preview blockquote{margin:1.4em 0;padding:.9em 1.2em;border-left:2px solid var(--acc);background:var(--acc-bg);color:var(--ink2);font-style:italic;font-family:var(--fs);border-radius:0 var(--r) var(--r) 0}
+#preview code{font-family:var(--fm);font-size:.84em;background:var(--surf2);border:1px solid var(--line2);border-radius:3px;padding:1px 5px}
+#preview pre{background:var(--surf2);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;overflow-x:auto;margin:1em 0}
+#preview pre code{background:none;border:none;padding:0;font-size:.87em;line-height:1.75}
+#preview table{width:100%;border-collapse:collapse;margin:1.2em 0;font-size:.92em}
+#preview th{font-size:.72em;font-weight:600;letter-spacing:.8px;text-transform:uppercase;text-align:left;padding:7px 12px;border-bottom:2px solid var(--line2);color:var(--ink2)}
+#preview td{padding:7px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+#preview hr{border:none;border-top:1px solid var(--line2);margin:2.5em 0}
+#preview img{max-width:100%;border-radius:var(--r)}
+.botbar{height:44px;background:var(--surf);border-top:1px solid var(--line);display:flex;align-items:center;padding:0 12px;gap:8px;flex-shrink:0}
+.stats{display:flex;align-items:center;gap:14px;flex:1}
+.stat{font-size:11.5px;color:var(--ink3);white-space:nowrap}
+.stat b{color:var(--ink2);font-weight:500}
+.mob-tabs{display:none;align-items:center;gap:2px;flex:1}
+.mt{height:30px;padding:0 14px;border:none;background:transparent;font-family:var(--fu);font-size:12px;font-weight:500;color:var(--ink3);cursor:pointer;border-radius:var(--r);transition:all .15s;white-space:nowrap}
+.mt.on{background:var(--surf2);color:var(--ink)}
+.bot-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.btn-pdf{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn-pdf:hover{opacity:.82}
+/* EXPORT PANEL */
+.exp-panel{background:var(--surf);border-top:1px solid var(--line2);flex-shrink:0;overflow:hidden;max-height:0;transition:max-height .3s cubic-bezier(.4,0,.2,1),padding .3s;padding:0 20px}
+.exp-panel.open{max-height:300px;padding:18px 20px 18px}
+.exp-inner{display:flex;flex-direction:column;gap:14px}
+.exp-label{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px}
+.exp-fname-row{display:flex;align-items:center;gap:8px}
+.exp-fname{flex:1;height:32px;padding:0 10px;background:var(--surf2);border:1px solid var(--line2);border-radius:var(--r);color:var(--ink);font-family:var(--fm);font-size:12px;outline:none;transition:border-color .15s}
+.exp-fname:focus{border-color:var(--acc)}
+.exp-hint{font-size:11px;color:var(--ink3);font-family:var(--fm);white-space:nowrap}
+.exp-div{height:1px;background:var(--line)}
+.exp-row{display:flex;gap:8px;flex-wrap:wrap}
+.eb{height:32px;display:inline-flex;align-items:center;gap:6px;padding:0 14px;border-radius:var(--r);font-family:var(--fu);font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap;border:1px solid var(--line2);background:transparent;color:var(--ink2)}
+.eb:hover{background:var(--surf2);color:var(--ink)}
+.eb-hi{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.eb-hi:hover{opacity:.82}
+.eb-acc{color:var(--acc);border-color:var(--acc);background:var(--acc-bg)}
+.eb-acc:hover{opacity:.8}
+.drag-over{outline:2px dashed var(--acc);outline-offset:-4px}
+#toast{position:fixed;bottom:60px;left:50%;transform:translateX(-50%) translateY(6px);background:var(--ink);color:var(--bg);font-family:var(--fu);font-size:12px;font-weight:500;padding:7px 16px;border-radius:20px;opacity:0;transition:all .2s;pointer-events:none;white-space:nowrap;z-index:9999}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:767px){
+  .stats{display:none}.mob-tabs{display:flex}.view-tabs{display:none}
+  nav{padding:0 10px;gap:6px}.fstrip{padding:0 8px}
+  #editor{padding:24px 16px 60px;font-size:15px}
+  #preview{padding:24px 16px 60px;font-size:15px}
+  .pv-pane.m-hide,.ed-pane.m-hide{display:none}
+  .div-handle{display:none}.botbar{padding:0 10px;gap:6px}
+  .exp-panel.open{max-height:360px;padding:14px 14px 14px}
+  .eb{height:34px;font-size:13px}.exp-fname{height:34px}
+}
+@media(min-width:768px){.mob-tabs{display:none!important}}
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo"><b>Mark</b>Flow</div>
+  <div class="view-tabs">
+    <button class="vt on" data-v="split" onclick="setView('split')">Split</button>
+    <button class="vt" data-v="write" onclick="setView('write')">Write</button>
+    <button class="vt" data-v="preview" onclick="setView('preview')">Preview</button>
+  </div>
+  <div class="spacer"></div>
+  <button class="btn btn-exp" id="exp-toggle" onclick="toggleExp()">匯出 ↓</button>
+  <button class="btn btn-sq" onclick="toggleDark()" title="切換主題">
+    <svg id="ico-d" width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M14 8.5A6 6 0 1 1 7.5 2a4.5 4.5 0 0 0 6.5 6.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+    <svg id="ico-l" width="14" height="14" viewBox="0 0 16 16" fill="none" style="display:none"><circle cx="8" cy="8" r="3" stroke="currentColor" stroke-width="1.4"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.22 3.22l1.42 1.42M11.36 11.36l1.42 1.42M11.36 4.64l1.42-1.42M3.22 12.78l1.42-1.42" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+  </button>
+</nav>
+<div class="fstrip">
+  <button class="fb" onclick="ins('**','**','粗體')"><b>B</b></button>
+  <button class="fb" onclick="ins('*','*','斜體')"><i>I</i></button>
+  <button class="fb" onclick="ins('~~','~~','刪除')" style="text-decoration:line-through">S</button>
+  <button class="fb" onclick="ins('`','`','code')">{ }</button>
+  <div class="fsep"></div>
+  <button class="fb" onclick="insLine('# ')">H1</button>
+  <button class="fb" onclick="insLine('## ')">H2</button>
+  <button class="fb" onclick="insLine('### ')">H3</button>
+  <div class="fsep"></div>
+  <button class="fb" onclick="insLine('- ')">List</button>
+  <button class="fb" onclick="insLine('1. ')">1.</button>
+  <button class="fb" onclick="insLine('> ')">Quote</button>
+  <button class="fb" onclick="insCode()">```</button>
+  <div class="fsep"></div>
+  <button class="fb" onclick="insLine('---')">HR</button>
+  <button class="fb" onclick="insLink()">Link</button>
+  <button class="fb" onclick="insTable()">Table</button>
+</div>
+<div class="workspace">
+  <div class="ed-pane" id="edp">
+    <textarea id="editor" placeholder="# 在這裡開始寫作…" spellcheck="false"></textarea>
+  </div>
+  <div class="div-handle" id="dvd"></div>
+  <div class="pv-pane" id="pvp">
+    <div class="pv-scroll"><div id="preview"></div></div>
+  </div>
+</div>
+<div class="botbar">
+  <div class="stats">
+    <span class="stat"><b id="sw">0</b> 字</span>
+    <span class="stat"><b id="sc">0</b> 字元</span>
+    <span class="stat"><b id="sl">0</b> 行</span>
+    <span class="stat">約 <b id="sr">0</b> 分鐘</span>
+    <span class="stat" id="ss" style="color:var(--ink3)">就緒</span>
+  </div>
+  <div class="mob-tabs">
+    <button class="mt on" data-t="edit" onclick="mTab('edit')">編輯</button>
+    <button class="mt" data-t="preview" onclick="mTab('preview')">預覽</button>
+  </div>
+  <div class="spacer"></div>
+  <div class="bot-actions">
+    <input type="file" id="fi" accept=".md,.txt" style="display:none">
+    <button class="btn" onclick="document.getElementById('fi').click()">
+      <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M7 2v7M7 2L4.5 4.5M7 2l2.5 2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 10.5V12a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5v-1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      匯入
+    </button>
+    <button class="btn btn-pdf" onclick="exportPDF()">
+      <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2.5 1h6.2L12 4.8V13H2.5V1z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M8 1v4h4M4.5 7h5M4.5 9.5h3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      PDF
+    </button>
+  </div>
+</div>
+<div class="exp-panel" id="exp-panel">
+  <div class="exp-inner">
+    <div>
+      <div class="exp-label">檔名</div>
+      <div class="exp-fname-row">
+        <input class="exp-fname" id="exp-fname" type="text" value="document" placeholder="檔名（不含副檔名）" spellcheck="false">
+        <span class="exp-hint">.pdf · .docx · .html</span>
+      </div>
+    </div>
+    <div class="exp-div"></div>
+    <div>
+      <div class="exp-label">HTML 網頁</div>
+      <div class="exp-row">
+        <button class="eb eb-acc" onclick="dlHTML('full')">
+          <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M7 10V3M7 10l-2.5-3M7 10l2.5-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 12h10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          下載完整網頁
+        </button>
+        <button class="eb" onclick="dlHTML('frag')">
+          <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M7 10V3M7 10l-2.5-3M7 10l2.5-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 12h10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          HTML 片段
+        </button>
+        <button class="eb" onclick="copyHTML()">
+          <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><rect x="4" y="4" width="8" height="8" rx="1.2" stroke="currentColor" stroke-width="1.3"/><path d="M2 10V2h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          複製 HTML
+        </button>
+      </div>
+    </div>
+    <div class="exp-div"></div>
+    <div>
+      <div class="exp-label">文件匯出</div>
+      <div class="exp-row">
+        <button class="eb eb-hi" onclick="exportPDF()">
+          <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M2.5 1h6.2L12 4.8V13H2.5V1z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M8 1v4h4M4.5 7h5M4.5 9.5h3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          下載 PDF
+        </button>
+        <button class="eb eb-acc" onclick="exportDOCX()">
+          <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="1.5" width="11" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M4 5h6M4 7.5h4M4 10h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          下載 DOCX
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+<script>
+const editor=document.getElementById('editor');
+const preview=document.getElementById('preview');
+let isDark=false,fNameLocked=false,saveTimer;
+const FONT_URL='https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300&family=Geist:wght@300;400;500;600&display=swap';
+
+/* PDF CSS — no @import inside, font loaded via <link> in iframe */
+const PDF_BASE=`*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+body{font-family:'Geist',sans-serif;font-size:11pt;line-height:1.75;padding:0;margin:0}.pf-wrap{padding:15mm 18mm}
+h1{font-family:'Fraunces',Georgia,serif;font-size:22pt;font-weight:300;font-style:italic;margin:0 0 12pt;letter-spacing:-.3px;line-height:1.2}
+h2{font-family:'Fraunces',Georgia,serif;font-size:15pt;font-weight:300;margin:20pt 0 6pt;padding-bottom:4pt}
+h3{font-size:8pt;font-weight:600;margin:16pt 0 4pt;letter-spacing:1px;text-transform:uppercase}
+h4,h5,h6{font-size:11pt;font-weight:500;margin:12pt 0 3pt}
+p{margin:0 0 9pt}a{text-decoration:underline}
+strong{font-weight:600}em{font-style:italic;font-family:'Fraunces',serif}
+ul,ol{margin:0 0 9pt 18pt}li{margin:2pt 0}
+blockquote{margin:12pt 0;padding:8pt 12pt;font-style:italic}
+code{font-family:'DM Mono',monospace;font-size:9pt;border-radius:3pt;padding:1pt 4pt}
+pre{border-radius:4pt;padding:10pt 12pt;margin:9pt 0;overflow:hidden}
+pre code{background:none!important;border:none!important;padding:0;font-size:9pt;line-height:1.7}
+table{width:100%;border-collapse:collapse;margin:12pt 0;font-size:10pt}
+th{font-size:7.5pt;font-weight:600;letter-spacing:.8px;text-transform:uppercase;text-align:left;padding:5pt 10pt}
+td{padding:5pt 10pt}hr{border:none;margin:20pt 0}img{max-width:100%}
+@page{margin:0;size:A4}body{margin:0!important;padding:0!important}`;
+
+const PDF_LIGHT=PDF_BASE+`
+html,body{background:#fff!important;color:#1c1917}
+h1,h2,h3,h4,h5,h6{color:#1c1917}h2{border-bottom:1px solid #ccc}h3{color:#78716c}
+a{color:#c2692a}p,li{color:#1c1917}
+blockquote{border-left:2pt solid #c2692a;background:#fdf3ec!important;color:#78716c}
+code{background:#f2f0ec!important;border:1px solid #e0ddd8;color:#1c1917}
+pre{background:#f2f0ec!important;border:1px solid #e0ddd8}
+th{border-bottom:1.5pt solid #ccc;color:#78716c}td{border-bottom:.5pt solid #e5e0da;color:#1c1917}
+hr{border-top:1pt solid #ddd}strong{color:#1c1917}`;
+
+const PDF_DARK=PDF_BASE+`
+html{background:#141210!important}
+body{background:#141210!important;color:#e8e2da}
+h1,h2,h4,h5,h6{color:#e8e2da}h2{border-bottom:1px solid #3a3530}h3{color:#8a8480}
+a{color:#e8a87c}p{color:#e8e2da}li{color:#e8e2da}strong{color:#e8e2da}
+blockquote{border-left:2pt solid #c2692a;background:#1e1410!important;color:#a8a29e}
+code{background:#242220!important;border:1px solid #3a3530;color:#e8e2da}
+pre{background:#242220!important;border:1px solid #3a3530}pre code{color:#e8e2da}
+th{border-bottom:1.5pt solid #3a3530;color:#8a8480}td{border-bottom:.5pt solid #2e2b28;color:#e8e2da}
+hr{border-top:1pt solid #3a3530}`;
+
+/* HTML page CSS */
+const HTML_LIGHT=`@import url('https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css');
+@import url('${FONT_URL}');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Geist',sans-serif;font-size:16px;line-height:1.8;color:#1c1917;background:#f9f7f4}
+.page{max-width:720px;margin:0 auto;padding:60px 40px 100px}
+h1{font-family:'Fraunces',Georgia,serif;font-size:2em;font-weight:300;font-style:italic;color:#1c1917;margin:0 0 .5em;letter-spacing:-.5px;line-height:1.2}
+h2{font-family:'Fraunces',Georgia,serif;font-size:1.45em;font-weight:300;color:#1c1917;margin:2em 0 .4em;padding-bottom:.3em;border-bottom:1px solid rgba(28,25,23,.14)}
+h3{font-size:.75em;font-weight:600;color:#78716c;margin:1.8em 0 .5em;letter-spacing:1.2px;text-transform:uppercase}
+h4,h5,h6{font-size:1em;font-weight:500;color:#1c1917;margin:1.5em 0 .3em}
+p{margin:0 0 1em}a{color:#c2692a;text-decoration:underline;text-underline-offset:3px}
+strong{font-weight:600}em{font-style:italic;font-family:'Fraunces',serif;font-size:1.04em}
+ul,ol{margin:0 0 1em 1.4em}li{margin:.3em 0}
+blockquote{margin:1.4em 0;padding:.9em 1.2em;border-left:2px solid #c2692a;background:#fdf3ec;color:#78716c;font-style:italic;font-family:'Fraunces',serif;border-radius:0 6px 6px 0}
+code{font-family:'DM Mono',monospace;font-size:.84em;background:#f2f0ec;border:1px solid rgba(28,25,23,.14);border-radius:3px;padding:1px 5px}
+pre{background:#f2f0ec;border:1px solid rgba(28,25,23,.07);border-radius:6px;padding:16px 18px;overflow-x:auto;margin:1em 0}
+pre code{background:none;border:none;padding:0;font-size:.87em;line-height:1.75}
+table{width:100%;border-collapse:collapse;margin:1.2em 0;font-size:.92em}
+th{font-size:.72em;font-weight:600;letter-spacing:.8px;text-transform:uppercase;text-align:left;padding:7px 12px;border-bottom:2px solid rgba(28,25,23,.14);color:#78716c}
+td{padding:7px 12px;border-bottom:1px solid rgba(28,25,23,.07);vertical-align:top}
+hr{border:none;border-top:1px solid rgba(28,25,23,.14);margin:2.5em 0}img{max-width:100%;border-radius:6px}`;
+
+const HTML_DARK=`@import url('https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css');
+@import url('${FONT_URL}');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Geist',sans-serif;font-size:16px;line-height:1.8;color:#e8e2da;background:#141210}
+.page{max-width:720px;margin:0 auto;padding:60px 40px 100px}
+h1{font-family:'Fraunces',Georgia,serif;font-size:2em;font-weight:300;font-style:italic;color:#e8e2da;margin:0 0 .5em;letter-spacing:-.5px;line-height:1.2}
+h2{font-family:'Fraunces',Georgia,serif;font-size:1.45em;font-weight:300;color:#e8e2da;margin:2em 0 .4em;padding-bottom:.3em;border-bottom:1px solid rgba(232,226,218,.13)}
+h3{font-size:.75em;font-weight:600;color:#8a8480;margin:1.8em 0 .5em;letter-spacing:1.2px;text-transform:uppercase}
+h4,h5,h6{font-size:1em;font-weight:500;color:#e8e2da;margin:1.5em 0 .3em}
+p{margin:0 0 1em;color:#e8e2da}a{color:#e8a87c;text-decoration:underline;text-underline-offset:3px}
+strong{font-weight:600;color:#e8e2da}em{font-style:italic;font-family:'Fraunces',serif;font-size:1.04em}
+ul,ol{margin:0 0 1em 1.4em}li{margin:.3em 0;color:#e8e2da}
+blockquote{margin:1.4em 0;padding:.9em 1.2em;border-left:2px solid #c2692a;background:#1e1410;color:#a8a29e;font-style:italic;font-family:'Fraunces',serif;border-radius:0 6px 6px 0}
+code{font-family:'DM Mono',monospace;font-size:.84em;background:#242220;border:1px solid rgba(232,226,218,.13);border-radius:3px;padding:1px 5px;color:#e8e2da}
+pre{background:#242220;border:1px solid rgba(232,226,218,.06);border-radius:6px;padding:16px 18px;overflow-x:auto;margin:1em 0}
+pre code{background:none;border:none;padding:0;font-size:.87em;line-height:1.75;color:#e8e2da}
+table{width:100%;border-collapse:collapse;margin:1.2em 0;font-size:.92em}
+th{font-size:.72em;font-weight:600;letter-spacing:.8px;text-transform:uppercase;text-align:left;padding:7px 12px;border-bottom:2px solid rgba(232,226,218,.13);color:#8a8480}
+td{padding:7px 12px;border-bottom:1px solid rgba(232,226,218,.06);vertical-align:top}
+hr{border:none;border-top:1px solid rgba(232,226,218,.13);margin:2.5em 0}img{max-width:100%;border-radius:6px}`;
+
+const DEMO=`# 歡迎使用 MarkFlow
+
+**MarkFlow** 是一個簡潔的 Markdown 編輯器，支援即時預覽，並可匯出為 PDF、Word 文件或 HTML 網頁。支援 **LaTeX** 數學公式渲染。
+
+## 文字格式
+
+這是普通段落。你可以使用 **粗體**、*斜體*、~~刪除線~~ 和 \`行內程式碼\`。
+
+## 數學公式
+
+行內公式：愛因斯坦的質能等式 $E = mc^2$，以及歐拉恆等式 $e^{i\\pi} + 1 = 0$。
+
+區塊公式：
+
+$$
+\\int_0^\\infty e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}
+$$
+
+$$
+\\sum_{n=0}^{\\infty} \\frac{x^n}{n!} = e^x
+$$
+
+## 引用與清單
+
+> 「好的設計是讓多餘的東西消失，讓必要的東西清晰可見。」
+
+- 即時 Markdown 預覽
+- LaTeX 數學公式（KaTeX）
+- 深色 / 淺色 PDF 匯出
+- Word DOCX 匯出
+- 完整 HTML 網頁下載
+
+## 程式碼
+
+\`\`\`javascript
+function exportPDF(isDark) {
+  const css = isDark ? PDF_DARK : PDF_LIGHT;
+  const iframe = document.createElement('iframe');
+  iframe.contentDocument.fonts.ready.then(() => iframe.print());
+}
+\`\`\`
+
+## 表格
+
+| 格式 | 可編輯 | 深色支援 | 數學公式 |
+|------|:------:|:--------:|:--------:|
+| PDF  | —      | ✓        | ✓        |
+| DOCX | ✓      | —        | —        |
+| HTML | ✓      | ✓        | ✓        |
+
+---
+
+*點右上角「匯出 ↓」展開匯出面板。*`;
+
+
+/* ── LaTeX rendering with KaTeX ── */
+let mathStore = [];
+
+function extractMath(src) {
+  mathStore = [];
+  let out = src;
+
+  // Block $$...$$ — replace before inline $ to avoid conflicts
+  out = out.replace(/\$\$([\s\S]+?)\$\$/g, (raw, s) => {
+    const i = mathStore.length;
+    mathStore.push({ src: s.trim(), display: true });
+    return `<span class="math-ph" data-mi="${i}"></span>`;
+  });
+
+  // Block \[...\]
+  out = out.replace(/\\\[([\s\S]+?)\\\]/g, (raw, s) => {
+    const i = mathStore.length;
+    mathStore.push({ src: s.trim(), display: true });
+    return `<span class="math-ph" data-mi="${i}"></span>`;
+  });
+
+  // Inline $...$ — must come AFTER block $$
+  out = out.replace(/\$([^\$\n]+?)\$/g, (raw, s) => {
+    const i = mathStore.length;
+    mathStore.push({ src: s.trim(), display: false });
+    return `<span class="math-ph" data-mi="${i}"></span>`;
+  });
+
+  // Inline \(...\)
+  out = out.replace(/\\\((.+?)\\\)/g, (raw, s) => {
+    const i = mathStore.length;
+    mathStore.push({ src: s.trim(), display: false });
+    return `<span class="math-ph" data-mi="${i}"></span>`;
+  });
+
+  return out;
+}
+
+function renderMath() {
+  preview.querySelectorAll('.math-ph').forEach(el => {
+    const i = parseInt(el.dataset.mi, 10);
+    const entry = mathStore[i];
+    if (!entry) return;
+    try {
+      const rendered = katex.renderToString(entry.src, {
+        displayMode: entry.display,
+        throwOnError: false,
+        output: 'html'
+      });
+      const wrap = document.createElement(entry.display ? 'div' : 'span');
+      if (entry.display) wrap.style.cssText = 'text-align:center;margin:1em 0;overflow-x:auto';
+      wrap.innerHTML = rendered;
+      el.replaceWith(wrap);
+    } catch(e) {
+      const err = document.createElement('span');
+      err.style.cssText = 'color:#e05050;font-family:monospace;font-size:.85em';
+      err.textContent = entry.src;
+      el.replaceWith(err);
+    }
+  });
+}
+
+function render(){
+  const extracted=extractMath(editor.value);
+  const rawHtml=marked.parse(extracted);
+  const sanitized=DOMPurify.sanitize(rawHtml,{ADD_TAGS:['span'],ADD_ATTR:['data-mi','class']});
+  preview.innerHTML=sanitized;
+  if(typeof katex!=='undefined') renderMath();
+  if(!fNameLocked)autoFilename();
+}
+
+marked.setOptions({breaks:true,gfm:true});
+editor.value=DEMO;
+render();updateStats();
+
+function updateStats(){
+  const t=editor.value,w=t.trim()?t.trim().split(/\s+/).length:0,r=Math.max(1,Math.ceil(w/200));
+  document.getElementById('sw').textContent=w;
+  document.getElementById('sc').textContent=t.length;
+  document.getElementById('sl').textContent=t.split('\n').length;
+  document.getElementById('sr').textContent=r;
+}
+editor.addEventListener('input',()=>{
+  render();updateStats();
+  document.getElementById('ss').textContent='編輯中…';
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{document.getElementById('ss').textContent='已儲存'},900);
+});
+document.getElementById('exp-fname').addEventListener('input',()=>{fNameLocked=true});
+
+function autoFilename(){
+  const h1=preview.querySelector('h1');
+  if(h1){document.getElementById('exp-fname').value=h1.textContent.trim().replace(/[\/\\:*?"<>|]/g,'_').slice(0,60)}
+}
+function getFilename(ext){
+  return(document.getElementById('exp-fname').value.trim()||'document').replace(/[\/\\:*?"<>|]/g,'_')+'.'+ext;
+}
+
+function setView(v){
+  document.querySelectorAll('.vt').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  const ep=document.getElementById('edp'),pp=document.getElementById('pvp'),dv=document.getElementById('dvd');
+  ep.style.display='';pp.style.display='';dv.style.display='';
+  ep.style.flex='1';pp.style.flex='1';ep.style.width='';pp.style.width='';
+  if(v==='write'){pp.style.display='none';dv.style.display='none'}
+  else if(v==='preview'){ep.style.display='none';dv.style.display='none'}
+}
+function toggleDark(){
+  isDark=!isDark;
+  document.documentElement.className=isDark?'dk':'';
+  document.getElementById('ico-d').style.display=isDark?'none':'';
+  document.getElementById('ico-l').style.display=isDark?'':'none';
+}
+function mTab(t){
+  document.querySelectorAll('.mt').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  document.getElementById('edp').classList.toggle('m-hide',t!=='edit');
+  document.getElementById('pvp').classList.toggle('m-hide',t!=='preview');
+}
+function toggleExp(){
+  const p=document.getElementById('exp-panel'),btn=document.getElementById('exp-toggle');
+  const open=p.classList.toggle('open');
+  btn.classList.toggle('active',open);
+  btn.textContent=open?'匯出 ↑':'匯出 ↓';
+}
+
+/* FILE */
+document.getElementById('fi').addEventListener('change',function(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{editor.value=ev.target.result;fNameLocked=false;render();updateStats();toast('已匯入 '+f.name)};
+  r.readAsText(f,'UTF-8');this.value='';
+});
+editor.addEventListener('dragover',e=>{e.preventDefault();editor.classList.add('drag-over')});
+editor.addEventListener('dragleave',()=>editor.classList.remove('drag-over'));
+editor.addEventListener('drop',e=>{
+  e.preventDefault();editor.classList.remove('drag-over');
+  const f=e.dataTransfer.files[0];
+  if(f){const r=new FileReader();r.onload=ev=>{editor.value=ev.target.result;fNameLocked=false;render();updateStats();toast('已匯入 '+f.name)};r.readAsText(f,'UTF-8')}
+});
+
+/* PDF — font loaded via <link> in iframe, wait fonts.ready before print */
+function exportPDF(){
+  render();
+  toast('正在準備 PDF…');
+  const css=isDark?PDF_DARK:PDF_LIGHT;
+  const iframe=document.createElement('iframe');
+  iframe.style.cssText='position:fixed;top:-9999px;left:-9999px;width:210mm;height:1px;border:none;visibility:hidden';
+  document.body.appendChild(iframe);
+  const idoc=iframe.contentDocument||iframe.contentWindow.document;
+  idoc.open();
+  idoc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><link rel="preconnect" href="https://fonts.googleapis.com"><link href="${FONT_URL}" rel="stylesheet"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css"><style>${css}</style></head><body><div class="pf-wrap">${preview.innerHTML}</div></body></html>`);
+  idoc.close();
+  const doPrint=()=>{
+    try{iframe.contentWindow.focus();iframe.contentWindow.print();}catch(e){}
+    setTimeout(()=>{if(document.body.contains(iframe))document.body.removeChild(iframe)},3000);
+  };
+  /* Use document.fonts.ready if available, fallback to timeout */
+  if(idoc.fonts&&idoc.fonts.ready){
+    idoc.fonts.ready.then(doPrint).catch(doPrint);
+  } else {
+    setTimeout(doPrint,1400);
+  }
+}
+
+/* HTML */
+function copyHTML(){navigator.clipboard.writeText(preview.innerHTML).then(()=>toast('✓ HTML 已複製'))}
+function dlHTML(mode){
+  const fname=getFilename('html'),css=isDark?HTML_DARK:HTML_LIGHT;
+  const title=document.getElementById('exp-fname').value.trim()||'document';
+  const html=mode==='full'
+    ?`<!DOCTYPE html>\n<html lang="zh-TW">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width,initial-scale=1.0">\n<title>${title}</title>\n<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">\n<style>\n${css}\n</style>\n</head>\n<body>\n<div class="page">\n${preview.innerHTML}\n</div>\n</body>\n</html>`
+    :preview.innerHTML;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));
+  a.download=fname;a.click();URL.revokeObjectURL(a.href);
+  toast('✓ HTML 已下載：'+fname);
+}
+
+/* DOCX */
+async function exportDOCX(){
+  if(typeof docx==='undefined'){toast('DOCX 函式庫載入中，請稍後再試');return}
+  toast('正在產生 Word 文件…');
+  try{
+    const{Document,Packer,Paragraph,TextRun,HeadingLevel,BorderStyle,Table,TableRow,TableCell,WidthType,AlignmentType,ShadingType}=docx;
+    const lines=editor.value.split('\n');
+    const children=[];let inCode=false,codeLines=[];
+    const inline=txt=>{
+      const runs=[];
+      txt.split(/(\*\*.*?\*\*|\*[^*].*?[^*]\*|\*[^*]\*|`.*?`|~~.*?~~)/g).forEach(p=>{
+        if(!p)return;
+        if(p.startsWith('**')&&p.endsWith('**'))runs.push(new TextRun({text:p.slice(2,-2),bold:true}));
+        else if(p.startsWith('*')&&p.endsWith('*'))runs.push(new TextRun({text:p.slice(1,-1),italics:true}));
+        else if(p.startsWith('`')&&p.endsWith('`'))runs.push(new TextRun({text:p.slice(1,-1),font:'Courier New',size:18}));
+        else if(p.startsWith('~~')&&p.endsWith('~~'))runs.push(new TextRun({text:p.slice(2,-2),strike:true}));
+        else runs.push(new TextRun({text:p}));
+      });
+      return runs.length?runs:[new TextRun({text:txt})];
+    };
+    let i=0;
+    while(i<lines.length){
+      const l=lines[i];
+      if(l.startsWith('```')){
+        if(!inCode){inCode=true;codeLines=[];i++;continue}
+        inCode=false;children.push(new Paragraph({children:[new TextRun({text:codeLines.join('\n'),font:'Courier New',size:18})],indent:{left:720},spacing:{before:120,after:120}}));i++;continue;
+      }
+      if(inCode){codeLines.push(l);i++;continue}
+      if(l.startsWith('|')){
+        const rows=[];
+        while(i<lines.length&&lines[i].startsWith('|')){if(!lines[i].match(/^\|[-| :]+\|$/))rows.push(lines[i]);i++}
+        if(rows.length){
+          children.push(new Table({rows:rows.map((r,ri)=>{
+            const cells=r.split('|').filter((_,ci)=>ci>0&&ci<r.split('|').length-1);
+            return new TableRow({children:cells.map(c=>new TableCell({children:[new Paragraph({children:inline(c.trim()),spacing:{before:60,after:60}})],shading:ri===0?{type:ShadingType.SOLID,color:'F5F5F3'}:undefined})),tableHeader:ri===0});
+          }),width:{size:100,type:WidthType.PERCENTAGE}}));
+          children.push(new Paragraph({text:'',spacing:{after:120}}));
+        }
+        continue;
+      }
+      if(l.match(/^(---|\*\*\*|___)\s*$/)){children.push(new Paragraph({text:'',border:{bottom:{color:'CCCCCC',space:1,style:BorderStyle.SINGLE,size:4}},spacing:{before:240,after:240}}));i++;continue}
+      const hm=l.match(/^(#{1,6})\s+(.+)/);
+      if(hm){
+        const hmap=[HeadingLevel.HEADING_1,HeadingLevel.HEADING_2,HeadingLevel.HEADING_3,HeadingLevel.HEADING_4,HeadingLevel.HEADING_5,HeadingLevel.HEADING_6];
+        children.push(new Paragraph({children:inline(hm[2]),heading:hmap[hm[1].length-1],spacing:{before:hm[1].length<=2?360:240,after:120}}));i++;continue;
+      }
+      if(l.startsWith('> ')){children.push(new Paragraph({children:inline(l.slice(2)),indent:{left:720},spacing:{before:120,after:120},border:{left:{color:'C2692A',space:10,style:BorderStyle.SINGLE,size:10}}}));i++;continue}
+      if(l.match(/^[-*+]\s+/)){children.push(new Paragraph({children:inline(l.replace(/^[-*+]\s+/,'')),bullet:{level:0},spacing:{before:60,after:60}}));i++;continue}
+      if(l.match(/^\d+\.\s+/)){children.push(new Paragraph({children:inline(l.replace(/^\d+\.\s+/,'')),numbering:{reference:'n1',level:0},spacing:{before:60,after:60}}));i++;continue}
+      if(l.trim()===''){children.push(new Paragraph({text:'',spacing:{after:80}}));i++;continue}
+      children.push(new Paragraph({children:inline(l),spacing:{before:0,after:140}}));i++;
+    }
+    const doc2=new Document({
+      numbering:{config:[{reference:'n1',levels:[{level:0,format:'decimal',text:'%1.',alignment:AlignmentType.LEFT,style:{paragraph:{indent:{left:720,hanging:360}}}}]}]},
+      sections:[{properties:{page:{margin:{top:1440,right:1440,bottom:1440,left:1440}}},children:children.length?children:[new Paragraph({text:''})]}]
+    });
+    const blob=await Packer.toBlob(doc2);
+    const a=document.createElement('a');
+    a.download=getFilename('docx');
+    a.href=URL.createObjectURL(blob);a.click();URL.revokeObjectURL(a.href);
+    toast('✓ Word 文件已下載');
+  }catch(e){console.error(e);toast('匯出失敗：'+e.message)}
+}
+
+/* TOOLBAR */
+function ins(a,b,ph){
+  const s=editor.selectionStart,e2=editor.selectionEnd,sel=editor.value.substring(s,e2)||ph;
+  editor.setRangeText(a+sel+b,s,e2,'end');
+  if(!editor.value.substring(s,e2)){editor.selectionStart=s+a.length;editor.selectionEnd=s+a.length+ph.length}
+  editor.focus();render();updateStats();
+}
+function insLine(p){const s=editor.selectionStart,ls=editor.value.lastIndexOf('\n',s-1)+1;editor.setRangeText(p,ls,ls,'end');editor.focus();render();updateStats()}
+function insCode(){const s=editor.selectionStart,e2=editor.selectionEnd;editor.setRangeText('\n```\n'+(editor.value.substring(s,e2)||'// 程式碼')+'\n```\n',s,e2,'end');editor.focus();render();updateStats()}
+function insLink(){const s=editor.selectionStart,e2=editor.selectionEnd;editor.setRangeText('['+(editor.value.substring(s,e2)||'連結文字')+'](https://)',s,e2,'end');editor.focus();render();updateStats()}
+function insTable(){editor.setRangeText('\n| 欄位 A | 欄位 B | 欄位 C |\n|--------|--------|--------|\n| 內容   | 內容   | 內容   |\n| 內容   | 內容   | 內容   |\n',editor.selectionStart,editor.selectionStart,'end');editor.focus();render();updateStats()}
+
+editor.addEventListener('keydown',e=>{if(e.key==='Tab'){e.preventDefault();const s=editor.selectionStart;editor.setRangeText('  ',s,editor.selectionEnd,'end');render();updateStats()}});
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='p'){e.preventDefault();exportPDF()}
+  if((e.ctrlKey||e.metaKey)&&e.shiftKey&&e.key.toLowerCase()==='d'){e.preventDefault();exportDOCX()}
+});
+
+/* SPLIT DRAG */
+(()=>{
+  const dvd=document.getElementById('dvd');let drag=false,sx=0,sl=0,sr=0;
+  dvd.addEventListener('mousedown',e=>{
+    if(window.innerWidth<768)return;
+    drag=true;sx=e.clientX;dvd.classList.add('drag');
+    sl=document.getElementById('edp').getBoundingClientRect().width;
+    sr=document.getElementById('pvp').getBoundingClientRect().width;
+    document.body.style.cursor='col-resize';document.body.style.userSelect='none';
+  });
+  document.addEventListener('mousemove',e=>{
+    if(!drag)return;
+    const nl=Math.max(240,Math.min(sl+sr-240,sl+e.clientX-sx));
+    document.getElementById('edp').style.cssText=`flex:none;width:${nl}px`;
+    document.getElementById('pvp').style.cssText=`flex:none;width:${sl+sr-nl}px`;
+  });
+  document.addEventListener('mouseup',()=>{drag=false;dvd.classList.remove('drag');document.body.style.cursor='';document.body.style.userSelect=''});
+})();
+
+function toast(m){
+  const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2800);
+}
+render();updateStats();
+</script>
+</body>
+</html>
